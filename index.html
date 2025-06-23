@@ -43,6 +43,12 @@
             border: 1px solid #ccc;
             width: 300px;
             font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .search-box input[type="text"]:focus {
+            border-color: #6200ea;
+            outline: none;
         }
 
         .search-box button {
@@ -54,17 +60,24 @@
             font-weight: bold;
             cursor: pointer;
             transition: background 0.3s;
+            min-width: 120px;
         }
 
-        .search-box button:hover {
+        .search-box button:hover:not(:disabled) {
             background-color: #3700b3;
+        }
+
+        .search-box button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
         }
 
         .loading {
             text-align: center;
-            font-size: 1.2em;
+            font-size: 1.3em;
             color: #555;
             margin-bottom: 15px;
+            font-weight: 600;
         }
 
         table {
@@ -86,11 +99,14 @@
             background-color: #6200ea;
             color: white;
             padding: 10px;
+            text-align: left;
         }
 
         td {
             padding: 8px;
             background-color: #fff;
+            vertical-align: middle;
+            word-break: break-word;
         }
 
         tr:nth-child(even) td {
@@ -105,6 +121,8 @@
             text-decoration: none;
             font-size: 0.9em;
             display: inline-block;
+            white-space: nowrap;
+            transition: background-color 0.3s;
         }
 
         .magnet-button:hover {
@@ -125,6 +143,10 @@
             table, th, td {
                 font-size: 0.9em;
             }
+
+            th, td {
+                padding: 6px;
+            }
         }
 
         #no-results {
@@ -139,8 +161,8 @@
     <header>Busca de Torrents</header>
     <div class="container">
         <div class="search-box">
-            <input type="text" id="search-query" placeholder="🔍 Digite o nome do filme ou série...">
-            <button onclick="searchTorrents()">Buscar</button>
+            <input type="text" id="search-query" placeholder="🔍 Digite o nome do filme ou série..." oninput="toggleButton()" />
+            <button id="search-btn" onclick="searchTorrents()" disabled>Buscar</button>
         </div>
         <div class="loading" id="loading-message" style="display: none;">🔄 Pesquisando por torrents...</div>
         <div id="no-results" style="display: none;">Nenhum torrent encontrado.</div>
@@ -168,17 +190,26 @@
             window.location.href = 'https://newsandmovies.weebly.com/busca-a-torrents.html';
         }
 
+        function toggleButton() {
+            const query = document.getElementById('search-query').value.trim();
+            document.getElementById('search-btn').disabled = (query.length === 0);
+        }
+
         async function searchTorrents() {
             const query = document.getElementById('search-query').value.trim();
             const loading = document.getElementById('loading-message');
             const table = document.getElementById('results-table');
             const body = document.getElementById('results-body');
             const noResults = document.getElementById('no-results');
+            const btn = document.getElementById('search-btn');
 
             if (!query) {
                 alert('Digite algo para buscar.');
                 return;
             }
+
+            btn.disabled = true;
+            btn.textContent = 'Carregando...';
 
             table.style.display = 'none';
             noResults.style.display = 'none';
@@ -193,15 +224,18 @@
                 let hasResults = false;
 
                 torrents.forEach(t => {
-                    if (parseInt(t.seeders) === 0) return; // ignora se seeders = 0
+                    // Ignorar seeders zero ou hash inválido
+                    if (parseInt(t.seeders) === 0) return;
+                    if (!t.hash || t.hash.length !== 40) return;
+
                     hasResults = true;
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${t.name || 'N/A'}</td>
+                        <td title="${t.name || 'N/A'}">${t.name || 'N/A'}</td>
                         <td>${t.size || 'N/A'}</td>
                         <td>${t.seeders || '0'}</td>
                         <td>${t.leechers || '0'}</td>
-                        <td><a class="magnet-button" href="magnet:?xt=urn:btih:${t.hash}" target="_blank">Magnet 🔗</a></td>
+                        <td><a class="magnet-button" href="magnet:?xt=urn:btih:${t.hash}" target="_blank" rel="noopener noreferrer">Magnet 🔗</a></td>
                     `;
                     body.appendChild(tr);
                 });
@@ -216,8 +250,15 @@
                 console.error(err);
                 alert('Erro ao buscar os torrents. Tente novamente.');
                 loading.style.display = 'none';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Buscar';
             }
         }
+
+        // Ativar botão se o input já tiver texto ao carregar a página
+        toggleButton();
     </script>
 </body>
 </html>
+
