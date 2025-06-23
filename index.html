@@ -224,8 +224,9 @@
                 let hasResults = false;
 
                 torrents.forEach(t => {
-                    // Ignorar seeders zero ou hash inválido
+                    // **Ignorar torrents com seeders zero**
                     if (parseInt(t.seeders) === 0) return;
+                    // Ignorar hash inválido
                     if (!t.hash || t.hash.length !== 40) return;
 
                     hasResults = true;
@@ -243,7 +244,9 @@
                 loading.style.display = 'none';
                 if (hasResults) {
                     table.style.display = 'table';
+                    noResults.style.display = 'none';
                 } else {
+                    table.style.display = 'none';
                     noResults.style.display = 'block';
                 }
             } catch (err) {
@@ -261,4 +264,5 @@
     </script>
 </body>
 </html>
+
 
